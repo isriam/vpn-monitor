@@ -2,8 +2,8 @@
 
 1. **Clone and setup:**
    ```bash
-   git clone https://github.com/isriam/wireguard-monitor.git
-   cd wireguard-monitor
+   git clone https://github.com/isriam/vpn-monitor.git
+   cd vpn-monitor
    sudo bash setup.sh
    ```
 
@@ -32,7 +32,7 @@
 
 4. **Start monitoring:**
    ```bash
-   sudo systemctl start wireguard-monitor
+   sudo systemctl start vpn-monitor
    ```
 
 That's it! The monitor will start checking your configured VPN connections (WireGuard and/or Tailscale) and send email alerts when issues are detected.
@@ -90,8 +90,8 @@ The combined monitor can run both services independently, or just one if the oth
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/isriam/wireguard-monitor.git
-   cd wireguard-monitor
+   git clone https://github.com/isriam/vpn-monitor.git
+   cd vpn-monitor
    ```
 
 2. **Run the setup script:**
@@ -114,7 +114,7 @@ The combined monitor can run both services independently, or just one if the oth
 
 4. **Start the service:**
    ```bash
-   sudo systemctl start wireguard-monitor
+   sudo systemctl start vpn-monitor
    ```
 
 ### Manual Installation
@@ -123,8 +123,8 @@ If you prefer to set up manually:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/isriam/wireguard-monitor.git
-   cd wireguard-monitor
+   git clone https://github.com/isriam/vpn-monitor.git
+   cd vpn-monitor
    ```
 
 2. **Create virtual environment:**
@@ -348,25 +348,25 @@ If you used the setup script, the monitor is installed as a systemd service. By 
 
 ```bash
 # Start the service
-sudo systemctl start wireguard-monitor
+sudo systemctl start vpn-monitor
 
 # Stop the service
-sudo systemctl stop wireguard-monitor
+sudo systemctl stop vpn-monitor
 
 # Restart the service
-sudo systemctl restart wireguard-monitor
+sudo systemctl restart vpn-monitor
 
 # Check service status
-sudo systemctl status wireguard-monitor
+sudo systemctl status vpn-monitor
 
 # View live logs
-sudo journalctl -u wireguard-monitor -f
+sudo journalctl -u vpn-monitor -f
 
 # Enable auto-start on boot (done automatically by setup script)
-sudo systemctl enable wireguard-monitor
+sudo systemctl enable vpn-monitor
 
 # Disable auto-start on boot
-sudo systemctl disable wireguard-monitor
+sudo systemctl disable vpn-monitor
 ```
 
 ### Run as a Service (systemd) - Manual Setup
@@ -375,20 +375,20 @@ If you didn't use the automated setup script, you can manually create the servic
 
 1. **Create service file:**
    ```bash
-   sudo nano /etc/systemd/system/wireguard-monitor.service
+   sudo nano /etc/systemd/system/vpn-monitor.service
    ```
 
 2. **Add service configuration:**
    ```ini
    [Unit]
-   Description=WireGuard Connection Monitor
+   Description=VPN Connection Monitor (WireGuard and Tailscale)
    After=network.target
 
    [Service]
    Type=simple
    User=your_username
-   WorkingDirectory=/path/to/wireguard-monitor
-   ExecStart=/path/to/wireguard-monitor/venv/bin/python /path/to/wireguard-monitor/wireguard_monitor.py
+   WorkingDirectory=/path/to/vpn-monitor
+   ExecStart=/path/to/vpn-monitor/venv/bin/python /path/to/vpn-monitor/combined_monitor.py
    Restart=always
    RestartSec=10
 
@@ -399,14 +399,14 @@ If you didn't use the automated setup script, you can manually create the servic
 3. **Enable and start service:**
    ```bash
    sudo systemctl daemon-reload
-   sudo systemctl enable wireguard-monitor
-   sudo systemctl start wireguard-monitor
+   sudo systemctl enable vpn-monitor
+   sudo systemctl start vpn-monitor
    ```
 
 ### Run with Screen (Alternative)
 ```bash
-screen -S wireguard-monitor
-python3 wireguard_monitor.py
+screen -S vpn-monitor
+python3 combined_monitor.py
 # Press Ctrl+A then D to detach
 ```
 

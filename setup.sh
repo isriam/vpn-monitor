@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# WireGuard Monitor Setup Script
+# VPN Monitor Setup Script
 # This script sets up the Python virtual environment, installs dependencies,
-# and creates a systemd service for the WireGuard monitor.
+# and creates a systemd service for the VPN monitor (WireGuard and Tailscale).
 
 set -e  # Exit on any error
 
@@ -15,12 +15,12 @@ NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVICE_NAME="wireguard-monitor"
+SERVICE_NAME="vpn-monitor"
 VENV_DIR="$SCRIPT_DIR/venv"
-PYTHON_SCRIPT="$SCRIPT_DIR/wireguard_monitor.py"
+PYTHON_SCRIPT="$SCRIPT_DIR/combined_monitor.py"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 
-echo -e "${BLUE}WireGuard Monitor Setup Script${NC}"
+echo -e "${BLUE}VPN Monitor Setup Script${NC}"
 echo "================================="
 echo ""
 
@@ -133,7 +133,7 @@ create_service() {
     
     cat > "$SERVICE_FILE" << EOF
 [Unit]
-Description=WireGuard Connection Monitor
+Description=VPN Connection Monitor (WireGuard and Tailscale)
 After=network.target
 Wants=network-online.target
 
@@ -252,7 +252,7 @@ print_instructions() {
     echo "  Disable service:  sudo systemctl disable $SERVICE_NAME"
     echo ""
     echo "Configuration file: $SCRIPT_DIR/.env"
-    echo "Log file:          $SCRIPT_DIR/wireguard_monitor.log"
+    echo "Log file:          $SCRIPT_DIR/combined_monitor.log"
     echo "Service file:      $SERVICE_FILE"
 }
 
