@@ -1,52 +1,4 @@
-## Quick Start
-
-1. **Clone and setup:**
-   ```bash
-   git clone https://github.com/isriam/vpn-monitor.git
-   cd vpn-monitor
-   sudo bash setup.sh
-   ```
-
-2. **Configure:**
-   ```bash
-   cp .env.example .env
-   nano .env  # Add your API keys and email settings
-   ```
-
-   Configure the services you want to monitor:
-   - **WireGuard**: Set `WG_API_KEY` and `MONITORED_PEERS`
-   - **Tailscale**: Set `TAILSCALE_API_KEY`, `TAILSCALE_TAILNET`, and device/tag monitoring options
-   - **Both**: Configure both sets of variables
-
-3. **Discover your device names (Tailscale users):**
-   ```bash
-   python3 tailscale_monitor.py --config-test -v
-   ```
-
-   This will show you:
-   - All device names in your Tailscale network (use exact names in `MONITORED_TAILSCALE_DEVICES`)
-   - Online/offline status of each device
-   - Any tags assigned to devices (use in `MONITORED_TAILSCALE_TAGS`)
-
-   Update your `.env` file with the exact device names shown.
-
-4. **Create and start the service(s):**
-
-   For WireGuard monitoring:
-   ```bash
-   # Create service file (see "Run as a Service" section for template)
-   sudo systemctl start vpn-monitor-wireguard
-   ```
-
-   For Tailscale monitoring:
-   ```bash
-   # Create service file (see "Run as a Service" section for template)
-   sudo systemctl start vpn-monitor-tailscale
-   ```
-
-That's it! The monitor will start checking your configured VPN connections and send email alerts when issues are detected. See the [Service Management](#service-management) section for detailed service setup instructions.
-
-# Network Connection Monitor
+# VPN Monitor
 
 A Python suite that monitors VPN connections and sends email notifications when connections fail or recover. Supports both WireGuard (via WireGuard Dashboard API) and Tailscale (via Tailscale API).
 
@@ -64,11 +16,6 @@ A Python suite that monitors VPN connections and sends email notifications when 
 - **Email Notifications**: Sends alerts when devices go offline or come back online
 - **Flexible Configuration**: Monitor specific devices or all devices in your tailnet
 
-### Combined Monitor
-- **Unified Monitoring**: Run both WireGuard and Tailscale monitors simultaneously
-- **Independent Operation**: Each monitor runs in its own thread
-- **Flexible Execution**: Run both or just one monitor as needed
-
 ### Common Features
 - **Comprehensive Logging**: Logs all activity to both console and file with different verbosity levels
 - **Configurable**: All settings managed through environment variables
@@ -78,13 +25,11 @@ A Python suite that monitors VPN connections and sends email notifications when 
 
 Choose the appropriate monitor based on your needs:
 
-- **`combined_monitor.py`** (Recommended): Run both WireGuard and Tailscale monitoring simultaneously. This is ideal if you use both VPN services or want unified monitoring.
-
 - **`wireguard_monitor.py`**: Monitor only WireGuard connections. Use this if you only have WireGuard infrastructure.
 
 - **`tailscale_monitor.py`**: Monitor only Tailscale devices. Use this if you only use Tailscale networking.
 
-The combined monitor can run both services independently, or just one if the other isn't configured. See the [Usage](#usage) section for command-line options.
+You can run both monitors simultaneously as separate services if you use both VPN services.
 
 ## Requirements
 
@@ -94,41 +39,6 @@ The combined monitor can run both services independently, or just one if the oth
 - SMTP email account (Gmail, Outlook, etc.)
 
 ## Installation
-
-### Automated Setup (Optional)
-
-The `setup.sh` script can help set up the Python environment, but you'll need to manually create the service files (see below).
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/isriam/vpn-monitor.git
-   cd vpn-monitor
-   ```
-
-2. **Run the setup script (optional):**
-   ```bash
-   sudo bash setup.sh
-   ```
-
-   The setup script will:
-   - Create a Python virtual environment
-   - Install all dependencies
-   - Set proper file permissions
-   - Create a basic systemd service (combined monitor)
-
-3. **Configure your settings:**
-   ```bash
-   cp .env.example .env
-   nano .env  # Edit with your settings
-   ```
-
-4. **Create service file(s) manually:**
-
-   See the [Run as a Service](#run-as-a-service-systemd---manual-setup) section for service file templates for WireGuard and/or Tailscale monitoring.
-
-### Manual Installation (Recommended)
-
-This is the recommended approach for full control over your setup:
 
 1. **Clone the repository:**
    ```bash
@@ -153,31 +63,7 @@ This is the recommended approach for full control over your setup:
    nano .env  # Edit with your settings
    ```
 
-## Setup Script Details
-
-The `setup.sh` script automates the entire installation process:
-
-### What it does:
-- ✅ Checks for Python 3 installation
-- ✅ Creates an isolated Python virtual environment
-- ✅ Installs all required dependencies
-- ✅ Creates a systemd service file with proper security settings
-- ✅ Sets correct file permissions
-- ✅ Enables the service to start on boot
-- ✅ Optionally starts the service immediately
-
-### Security Features:
-- Runs the service as a non-root user
-- Implements systemd security restrictions
-- Sets proper file permissions (600 for .env)
-- Uses virtual environment isolation
-
-### Requirements:
-- Must be run with `sudo` (for systemd service creation)
-- Python 3 with venv support
-- systemd-based Linux distribution
-
-If the setup script doesn't work for your system, you can follow the manual installation steps instead.
+## Configuration
 
 ### Required Environment Variables
 
@@ -299,7 +185,7 @@ MONITORED_TAILSCALE_TAGS=kids-devices  # This is ignored
 
 ## Usage
 
-### WireGuard Monitor Only
+### WireGuard Monitor
 
 #### Manual Execution (Virtual Environment)
 ```bash
@@ -320,7 +206,7 @@ python3 wireguard_monitor.py --check-once       # Single status check (no loop)
 python3 wireguard_monitor.py --config-test      # Test configuration and API
 ```
 
-### Tailscale Monitor Only
+### Tailscale Monitor
 
 ```bash
 python3 tailscale_monitor.py
@@ -334,22 +220,23 @@ python3 tailscale_monitor.py --check-once       # Single status check
 python3 tailscale_monitor.py --config-test      # Test configuration and API
 ```
 
-### Combined Monitor (Both Services)
+### Discover Device Names (Tailscale)
 
-Monitor both WireGuard and Tailscale simultaneously:
-
+Before setting up monitoring, discover your device names:
 ```bash
-python3 combined_monitor.py
-
-# Examples:
-python3 combined_monitor.py                     # Monitor both services
-python3 combined_monitor.py --wireguard-only    # Monitor only WireGuard
-python3 combined_monitor.py --tailscale-only    # Monitor only Tailscale
-python3 combined_monitor.py -v                  # Verbose output
-python3 combined_monitor.py -d                  # Debug mode
-python3 combined_monitor.py --check-once        # Single check and exit
-python3 combined_monitor.py --config-test       # Test both configurations
+python3 tailscale_monitor.py --config-test -v
 ```
+
+This will show you:
+- All device names in your Tailscale network (use exact names in `MONITORED_TAILSCALE_DEVICES`)
+- Online/offline status of each device
+- Any tags assigned to devices (use in `MONITORED_TAILSCALE_TAGS`)
+
+Update your `.env` file with the exact device names shown.
+
+## Run as a Service (systemd)
+
+You can create separate services for WireGuard and Tailscale monitoring. This allows you to independently enable/disable each based on what you use.
 
 ### Service Management
 
@@ -409,7 +296,7 @@ sudo systemctl enable vpn-monitor-tailscale
 sudo systemctl disable vpn-monitor-tailscale
 ```
 
-### Run as a Service (systemd) - Manual Setup
+### Manual Service Setup
 
 You can create separate services for WireGuard and Tailscale monitoring. This allows you to independently enable/disable each based on what you use.
 
@@ -499,41 +386,22 @@ You can create separate services for WireGuard and Tailscale monitoring. This al
 
 **Note:** You can enable both services, just one, or neither depending on your needs. Each service monitors independently and shares the same `.env` configuration file.
 
-### Run with Screen (Alternative)
-
-If you don't want to use systemd services, you can run the monitors in screen sessions:
-
-```bash
-# For WireGuard monitoring
-screen -S vpn-monitor-wireguard
-python3 wireguard_monitor.py
-# Press Ctrl+A then D to detach
-
-# For Tailscale monitoring
-screen -S vpn-monitor-tailscale
-python3 tailscale_monitor.py
-# Press Ctrl+A then D to detach
-
-# Or run both together
-screen -S vpn-monitor-combined
-python3 combined_monitor.py
-# Press Ctrl+A then D to detach
-```
-
 ## How It Works
 
-1. **API Monitoring**: The script regularly polls the WireGuard Dashboard API to get configuration and peer status
-2. **Connection Analysis**: Checks interface status and analyzes peer handshake timestamps
+1. **API Monitoring**: The script regularly polls the WireGuard Dashboard API or Tailscale API to get status
+2. **Connection Analysis**: Checks interface status and analyzes peer handshake timestamps or device online status
 3. **Status Tracking**: Maintains state to detect changes and avoid duplicate notifications
 4. **Email Alerts**: Sends notifications when:
    - WireGuard interface goes down
    - Peers disconnect or reconnect
+   - Tailscale devices go offline or come online
    - API becomes unavailable (after multiple failures)
 
 ## Monitoring Logic
 
 - **Interface Status**: Checks if WireGuard interface is up/down
 - **Peer Connections**: Considers a peer connected if their last handshake was within the configured timeout (default: 5 minutes)
+- **Device Status**: Tracks Tailscale device online/offline status via API
 - **API Failures**: Sends alerts after 3 consecutive API failures to detect monitoring issues
 
 ## Email Notifications
@@ -543,10 +411,12 @@ The script sends notifications for:
 ### Connection Issues
 - Interface down
 - Peer disconnections
+- Device offline
 - API unavailable
 
 ### Recovery Events
 - Peer reconnections
+- Device online
 - Interface restored
 
 ### Sample Email
@@ -568,7 +438,7 @@ Current peer status:
 
 Logs are written to both:
 - **Console**: Real-time status information
-- **File**: `wireguard_monitor.log` with detailed timestamps
+- **File**: `wireguard_monitor.log` or `tailscale_monitor.log` with detailed timestamps
 
 Log levels:
 - `INFO`: Normal operations and status checks
@@ -599,9 +469,10 @@ Log levels:
 
 ### Debug Mode
 
-Enable debug logging by modifying the script:
-```python
-logging.basicConfig(level=logging.DEBUG, ...)
+Enable debug logging by running with the `-d` flag:
+```bash
+python3 wireguard_monitor.py -d
+python3 tailscale_monitor.py -d
 ```
 
 ## API Compatibility
