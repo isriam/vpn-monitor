@@ -18,23 +18,41 @@
    sudo systemctl start wireguard-monitor
    ```
 
-That's it! The monitor will start checking your WireGuard connections and send email alerts when issues are detected.# WireGuard Connection Monitor
+That's it! The monitor will start checking your WireGuard connections and send email alerts when issues are detected.
 
-A Python script that monitors WireGuard VPN connections via the WireGuard Dashboard API and sends email notifications when connections fail or recover.
+# Network Connection Monitor
+
+A Python suite that monitors VPN connections and sends email notifications when connections fail or recover. Supports both WireGuard (via WireGuard Dashboard API) and Tailscale (via Tailscale API).
 
 ## Features
 
+### WireGuard Monitor
 - **Real-time Monitoring**: Continuously monitors WireGuard interface and peer connection status
 - **Email Notifications**: Sends alerts when peers disconnect, reconnect, or when the interface goes down
 - **Robust Error Handling**: Includes retry logic for API failures and network issues
-- **Comprehensive Logging**: Logs all activity to both console and file
 - **Smart Notifications**: Prevents spam by only sending alerts on status changes
+
+### Tailscale Monitor
+- **Device Monitoring**: Tracks online/offline status of Tailscale devices
+- **API Integration**: Uses Tailscale API to check device status
+- **Email Notifications**: Sends alerts when devices go offline or come back online
+- **Flexible Configuration**: Monitor specific devices or all devices in your tailnet
+
+### Combined Monitor
+- **Unified Monitoring**: Run both WireGuard and Tailscale monitors simultaneously
+- **Independent Operation**: Each monitor runs in its own thread
+- **Flexible Execution**: Run both or just one monitor as needed
+
+### Common Features
+- **Comprehensive Logging**: Logs all activity to both console and file with different verbosity levels
 - **Configurable**: All settings managed through environment variables
+- **Multiple Execution Modes**: Normal operation, single check, config test, and debug modes
 
 ## Requirements
 
 - Python 3.6+
-- WireGuard Dashboard with API access
+- For WireGuard: WireGuard Dashboard with API access
+- For Tailscale: Tailscale account with API access
 - SMTP email account (Gmail, Outlook, etc.)
 
 ## Installation
@@ -127,13 +145,25 @@ If the setup script doesn't work for your system, you can follow the manual inst
 
 Copy `.env.example` to `.env` and configure the following required variables:
 
+#### Common (Required for Email Notifications)
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `WG_API_KEY` | WireGuard Dashboard API key | `WuphoOM7MXGcTYjU0RCCXYvvt3uM-8AffhxaOnEI1LU` |
-| `MONITORED_PEERS` | Comma-separated list of peer names to monitor | `JW Work Phone,JW Home PC` |
 | `SMTP_USERNAME` | Email account username | `your_email@gmail.com` |
 | `SMTP_PASSWORD` | Email account password/app password | `your_app_password` |
 | `FROM_EMAIL` | Sender email address | `your_email@gmail.com` |
+
+#### WireGuard Monitor (Required if using WireGuard)
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `WG_API_KEY` | WireGuard Dashboard API key | `WuphoOM7MXGcTYjU0RCCXYvvt3uM-8AffhxaOnEI1LU` |
+| `MONITORED_PEERS` | Comma-separated list of peer names to monitor | `Work Phone,Home PC` |
+
+#### Tailscale Monitor (Required if using Tailscale)
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `TAILSCALE_TAILNET` | Your Tailscale tailnet name | `example.com` or `user@domain.com` |
+| `TAILSCALE_API_KEY` | Tailscale API key from admin console | `tskey-api-xxx...` |
+| `MONITORED_TAILSCALE_DEVICES` | Comma-separated list of device names to monitor | `laptop,phone,server` |
 
 ### Optional Environment Variables
 
@@ -144,7 +174,8 @@ Copy `.env.example` to `.env` and configure the following required variables:
 | `SMTP_SERVER` | `smtp.gmail.com` | SMTP server hostname |
 | `SMTP_PORT` | `587` | SMTP server port |
 | `TO_EMAILS` | `admin@example.com` | Comma-separated list of recipients |
-| `MONITOR_ALL_PEERS` | `false` | Monitor all peers automatically (true/false) |
+| `MONITOR_ALL_PEERS` | `false` | Monitor all WireGuard peers automatically (true/false) |
+| `MONITOR_ALL_TAILSCALE_DEVICES` | `false` | Monitor all Tailscale devices automatically (true/false) |
 | `CHECK_INTERVAL` | `300` | Time between checks (seconds) |
 | `CONNECTION_TIMEOUT` | `10` | API request timeout (seconds) |
 | `MAX_RETRIES` | `3` | Maximum API retry attempts |
@@ -168,24 +199,79 @@ Update `SMTP_SERVER` and `SMTP_PORT` for your provider:
 | Yahoo | smtp.mail.yahoo.com | 587 | STARTTLS |
 | Custom | your.smtp.server | 587/465 | STARTTLS/SSL |
 
+### Tailscale API Setup
+
+To use the Tailscale monitor, you need to generate an API key:
+
+1. Go to the [Tailscale Admin Console](https://login.tailscale.com/admin/settings/keys)
+2. Navigate to **Settings** → **Keys**
+3. Click **Generate API key**
+4. Give it a description (e.g., "Network Monitor")
+5. Copy the key (it starts with `tskey-api-`)
+6. Add it to your `.env` file as `TAILSCALE_API_KEY`
+
+For `TAILSCALE_TAILNET`, use:
+- Your tailnet domain (e.g., `example.com`)
+- Or your email domain if using personal account (e.g., `user@domain.com`)
+
+To find device names for monitoring:
+```bash
+# Run config test to see all available devices
+python3 tailscale_monitor.py --config-test -v
+```
+
 ## Usage
 
-### Manual Execution (Virtual Environment)
+### WireGuard Monitor Only
+
+#### Manual Execution (Virtual Environment)
 ```bash
 source venv/bin/activate
 python3 wireguard_monitor.py
 ```
 
-### Manual Execution (System Python)
+#### Manual Execution (System Python)
 ```bash
 python3 wireguard_monitor.py
 
-Debug Examples:
-  python3 wireguard_monitor.py                    # Normal operation
-  python3 wireguard_monitor.py -v                 # Verbose output
-  python3 wireguard_monitor.py -d                 # Debug mode with detailed logging
-  python3 wireguard_monitor.py --test-email       # Test email configuration
-  python3 wireguard_monitor.py --check-once       # Single status check (no loop)
+# Examples:
+python3 wireguard_monitor.py                    # Normal operation
+python3 wireguard_monitor.py -v                 # Verbose output
+python3 wireguard_monitor.py -d                 # Debug mode with detailed logging
+python3 wireguard_monitor.py --test-email       # Test email configuration
+python3 wireguard_monitor.py --check-once       # Single status check (no loop)
+python3 wireguard_monitor.py --config-test      # Test configuration and API
+```
+
+### Tailscale Monitor Only
+
+```bash
+python3 tailscale_monitor.py
+
+# Examples:
+python3 tailscale_monitor.py                    # Normal operation
+python3 tailscale_monitor.py -v                 # Verbose output
+python3 tailscale_monitor.py -d                 # Debug mode
+python3 tailscale_monitor.py --test-email       # Test email configuration
+python3 tailscale_monitor.py --check-once       # Single status check
+python3 tailscale_monitor.py --config-test      # Test configuration and API
+```
+
+### Combined Monitor (Both Services)
+
+Monitor both WireGuard and Tailscale simultaneously:
+
+```bash
+python3 combined_monitor.py
+
+# Examples:
+python3 combined_monitor.py                     # Monitor both services
+python3 combined_monitor.py --wireguard-only    # Monitor only WireGuard
+python3 combined_monitor.py --tailscale-only    # Monitor only Tailscale
+python3 combined_monitor.py -v                  # Verbose output
+python3 combined_monitor.py -d                  # Debug mode
+python3 combined_monitor.py --check-once        # Single check and exit
+python3 combined_monitor.py --config-test       # Test both configurations
 ```
 
 ### Service Management
