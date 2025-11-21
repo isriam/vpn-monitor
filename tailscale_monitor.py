@@ -367,11 +367,12 @@ class TailscaleMonitor:
 
         # Send notifications for devices going offline
         if offline_devices:
-            # Include device name(s) in subject
-            if len(offline_devices) == 1:
-                device_list = offline_devices[0]
+            # Include device name(s) in subject, strip domain at first period
+            short_names = [name.split('.')[0] for name in offline_devices]
+            if len(short_names) == 1:
+                device_list = short_names[0]
             else:
-                device_list = ', '.join(offline_devices)
+                device_list = ', '.join(short_names)
 
             subject = f"Tailscale Device Offline: {device_list}"
             body = f"""
@@ -390,11 +391,12 @@ Current device status:
 
         # Send notifications for devices coming online
         if online_devices:
-            # Include device name(s) in subject
-            if len(online_devices) == 1:
-                device_list = online_devices[0]
+            # Include device name(s) in subject, strip domain at first period
+            short_names = [name.split('.')[0] for name in online_devices]
+            if len(short_names) == 1:
+                device_list = short_names[0]
             else:
-                device_list = ', '.join(online_devices)
+                device_list = ', '.join(short_names)
 
             subject = f"Tailscale Device Online: {device_list}"
             body = f"""
