@@ -164,6 +164,7 @@ Copy `.env.example` to `.env` and configure the following required variables:
 | `TAILSCALE_TAILNET` | Your Tailscale tailnet name | `example.com` or `user@domain.com` |
 | `TAILSCALE_API_KEY` | Tailscale API key from admin console | `tskey-api-xxx...` |
 | `MONITORED_TAILSCALE_DEVICES` | Comma-separated list of device names to monitor | `laptop,phone,server` |
+| `MONITORED_TAILSCALE_TAGS` | Comma-separated list of tags to monitor (see Tag-Based Monitoring below) | `kids-devices,family` or `tag:kids-devices,tag:family` |
 
 ### Optional Environment Variables
 
@@ -214,10 +215,48 @@ For `TAILSCALE_TAILNET`, use:
 - Your tailnet domain (e.g., `example.com`)
 - Or your email domain if using personal account (e.g., `user@domain.com`)
 
-To find device names for monitoring:
+To find device names and tags for monitoring:
 ```bash
-# Run config test to see all available devices
+# Run config test to see all available devices and their tags
 python3 tailscale_monitor.py --config-test -v
+```
+
+#### Tag-Based Monitoring
+
+Tailscale allows you to organize devices using tags. You can monitor groups of devices by specifying tags instead of individual device names:
+
+**Setting Up Tags in Tailscale:**
+1. Go to your [Tailscale Admin Console](https://login.tailscale.com/admin/machines)
+2. Select a device
+3. Click on the tags section and add tags (e.g., `tag:kids-devices`, `tag:family`)
+
+**Configuring Tag Monitoring:**
+
+In your `.env` file, you can specify tags in two formats:
+```bash
+# With "tag:" prefix (exact format from Tailscale)
+MONITORED_TAILSCALE_TAGS=tag:kids-devices,tag:family
+
+# Or without prefix (automatically added)
+MONITORED_TAILSCALE_TAGS=kids-devices,family
+```
+
+**Monitoring Priority:**
+1. **Specific devices** (highest priority) - If `MONITORED_TAILSCALE_DEVICES` is set, only those devices are monitored
+2. **Tags** - If `MONITORED_TAILSCALE_TAGS` is set and no specific devices configured, all devices with matching tags are monitored
+3. **All devices** - If `MONITOR_ALL_TAILSCALE_DEVICES=true` and no specific devices or tags configured, all devices are monitored
+
+**Example Scenarios:**
+```bash
+# Monitor only children's devices by tag
+MONITORED_TAILSCALE_TAGS=kids-devices
+
+# Monitor multiple groups
+MONITORED_TAILSCALE_TAGS=kids-devices,family,iot-devices
+
+# Monitor specific devices (ignores tags)
+MONITORED_TAILSCALE_DEVICES=laptop,phone
+MONITORED_TAILSCALE_TAGS=kids-devices  # This is ignored
 ```
 
 ## Usage

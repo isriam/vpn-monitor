@@ -118,6 +118,10 @@ def load_config() -> Dict:
     monitored_devices_str = os.getenv('MONITORED_TAILSCALE_DEVICES', '')
     monitored_devices = [device.strip() for device in monitored_devices_str.split(',') if device.strip()]
 
+    # Parse monitored tags (comma-separated)
+    monitored_tags_str = os.getenv('MONITORED_TAILSCALE_TAGS', '')
+    monitored_tags = [tag.strip() for tag in monitored_tags_str.split(',') if tag.strip()]
+
     return {
         # Tailscale API settings
         'tailnet': os.getenv('TAILSCALE_TAILNET'),
@@ -137,6 +141,7 @@ def load_config() -> Dict:
         'max_retries': int(os.getenv('MAX_RETRIES', '3')),
         'retry_delay': int(os.getenv('RETRY_DELAY', '30')),
         'monitored_devices': monitored_devices,
+        'monitored_tags': monitored_tags,
         'monitor_all_devices': os.getenv('MONITOR_ALL_TAILSCALE_DEVICES', 'false').lower() == 'true',
     }
 
@@ -273,25 +278,52 @@ class TailscaleMonitor:
             return {}
 
         # Determine which devices to monitor
-        if self.config['monitored_devices']:
+        # Priority: specific devices > tags > all devices
+        monitor_by_name = bool(self.config['monitored_devices'])
+        monitor_by_tags = bool(self.config['monitored_tags'])
+        monitor_all = self.config['monitor_all_devices']
+
+        if monitor_by_name:
             devices_to_monitor = self.config['monitored_devices']
             logger.debug(f"Monitoring specific devices: {devices_to_monitor}")
-        elif self.config['monitor_all_devices']:
-            devices_to_monitor = [device.get('name', device.get('hostname', f"device-{i}"))
-                                  for i, device in enumerate(devices)]
-            logger.debug(f"Monitoring all devices: {devices_to_monitor}")
+        elif monitor_by_tags:
+            logger.debug(f"Monitoring devices with tags: {self.config['monitored_tags']}")
+        elif monitor_all:
+            logger.debug(f"Monitoring all devices")
         else:
-            logger.warning("No devices configured for monitoring. Set MONITORED_TAILSCALE_DEVICES or MONITOR_ALL_TAILSCALE_DEVICES=true")
+            logger.warning("No devices configured for monitoring. Set MONITORED_TAILSCALE_DEVICES, MONITORED_TAILSCALE_TAGS, or MONITOR_ALL_TAILSCALE_DEVICES=true")
             return {}
 
         device_status = {}
 
         for i, device in enumerate(devices):
             device_name = device.get('name', device.get('hostname', f'device-{i}'))
+            device_tags = device.get('tags', [])
 
-            # Only monitor devices in our watch list
-            if device_name not in devices_to_monitor:
-                logger.debug(f"Skipping device '{device_name}' (not in monitor list)")
+            # Determine if this device should be monitored
+            should_monitor = False
+
+            if monitor_by_name:
+                # Monitor by specific device name
+                if device_name in devices_to_monitor:
+                    should_monitor = True
+                    logger.debug(f"Device '{device_name}' matches name filter")
+            elif monitor_by_tags:
+                # Monitor by tags - check if device has any of the monitored tags
+                # Tailscale tags are in format "tag:tagname"
+                for monitored_tag in self.config['monitored_tags']:
+                    # Support both "tag:name" and "name" format
+                    tag_to_check = monitored_tag if monitored_tag.startswith('tag:') else f'tag:{monitored_tag}'
+                    if tag_to_check in device_tags:
+                        should_monitor = True
+                        logger.debug(f"Device '{device_name}' has matching tag '{tag_to_check}' from tags: {device_tags}")
+                        break
+            elif monitor_all:
+                # Monitor all devices
+                should_monitor = True
+
+            if not should_monitor:
+                logger.debug(f"Skipping device '{device_name}' (does not match filter criteria, tags: {device_tags})")
                 continue
 
             # Check if device is online
@@ -393,8 +425,10 @@ Current device status:
                 is_online = device.get('online', False)
                 os_type = device.get('os', 'Unknown')
                 last_seen = device.get('lastSeen', 'Unknown')
+                device_tags = device.get('tags', [])
                 status_str = "Online" if is_online else "Offline"
-                logger.info(f"  - {device_name}: {status_str} (OS: {os_type}, Last seen: {last_seen})")
+                tags_str = f", Tags: {', '.join(device_tags)}" if device_tags else ", Tags: none"
+                logger.info(f"  - {device_name}: {status_str} (OS: {os_type}, Last seen: {last_seen}{tags_str})")
 
         # Test monitoring logic
         status = self.analyze_devices(data)
@@ -410,11 +444,14 @@ Current device status:
                 logger.info(f"  - {device_name}: {status_str}")
         else:
             logger.warning("No devices configured for monitoring")
-            logger.info("Available device names:")
+            logger.info("Available device names and tags:")
             if 'devices' in data:
                 for device in data['devices']:
-                    logger.info(f"  - '{device.get('name', device.get('hostname', 'unnamed'))}'")
-            logger.info("Configure MONITORED_TAILSCALE_DEVICES in .env or set MONITOR_ALL_TAILSCALE_DEVICES=true")
+                    device_name = device.get('name', device.get('hostname', 'unnamed'))
+                    device_tags = device.get('tags', [])
+                    tags_str = f" [Tags: {', '.join(device_tags)}]" if device_tags else " [No tags]"
+                    logger.info(f"  - '{device_name}'{tags_str}")
+            logger.info("Configure MONITORED_TAILSCALE_DEVICES, MONITORED_TAILSCALE_TAGS, or set MONITOR_ALL_TAILSCALE_DEVICES=true")
 
         return True
 
