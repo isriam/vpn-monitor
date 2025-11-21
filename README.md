@@ -18,7 +18,19 @@
    - **Tailscale**: Set `TAILSCALE_API_KEY`, `TAILSCALE_TAILNET`, and device/tag monitoring options
    - **Both**: Configure both sets of variables
 
-3. **Start monitoring:**
+3. **Discover your device names (Tailscale users):**
+   ```bash
+   python3 tailscale_monitor.py --config-test -v
+   ```
+
+   This will show you:
+   - All device names in your Tailscale network (use exact names in `MONITORED_TAILSCALE_DEVICES`)
+   - Online/offline status of each device
+   - Any tags assigned to devices (use in `MONITORED_TAILSCALE_TAGS`)
+
+   Update your `.env` file with the exact device names shown.
+
+4. **Start monitoring:**
    ```bash
    sudo systemctl start wireguard-monitor
    ```
