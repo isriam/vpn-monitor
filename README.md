@@ -10,15 +10,20 @@
 2. **Configure:**
    ```bash
    cp .env.example .env
-   nano .env  # Add your API key and email settings
+   nano .env  # Add your API keys and email settings
    ```
+
+   Configure the services you want to monitor:
+   - **WireGuard**: Set `WG_API_KEY` and `MONITORED_PEERS`
+   - **Tailscale**: Set `TAILSCALE_API_KEY`, `TAILSCALE_TAILNET`, and device/tag monitoring options
+   - **Both**: Configure both sets of variables
 
 3. **Start monitoring:**
    ```bash
    sudo systemctl start wireguard-monitor
    ```
 
-That's it! The monitor will start checking your WireGuard connections and send email alerts when issues are detected.
+That's it! The monitor will start checking your configured VPN connections (WireGuard and/or Tailscale) and send email alerts when issues are detected.
 
 # Network Connection Monitor
 
@@ -47,6 +52,18 @@ A Python suite that monitors VPN connections and sends email notifications when 
 - **Comprehensive Logging**: Logs all activity to both console and file with different verbosity levels
 - **Configurable**: All settings managed through environment variables
 - **Multiple Execution Modes**: Normal operation, single check, config test, and debug modes
+
+## Which Monitor Should I Use?
+
+Choose the appropriate monitor based on your needs:
+
+- **`combined_monitor.py`** (Recommended): Run both WireGuard and Tailscale monitoring simultaneously. This is ideal if you use both VPN services or want unified monitoring.
+
+- **`wireguard_monitor.py`**: Monitor only WireGuard connections. Use this if you only have WireGuard infrastructure.
+
+- **`tailscale_monitor.py`**: Monitor only Tailscale devices. Use this if you only use Tailscale networking.
+
+The combined monitor can run both services independently, or just one if the other isn't configured. See the [Usage](#usage) section for command-line options.
 
 ## Requirements
 
@@ -315,7 +332,7 @@ python3 combined_monitor.py --config-test       # Test both configurations
 
 ### Service Management
 
-If you used the setup script, the monitor is installed as a systemd service:
+If you used the setup script, the monitor is installed as a systemd service. By default, the service runs `combined_monitor.py` to monitor both WireGuard and Tailscale (depending on which services you've configured in `.env`).
 
 ```bash
 # Start the service
