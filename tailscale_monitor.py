@@ -367,7 +367,14 @@ class TailscaleMonitor:
 
         # Send notifications for devices going offline
         if offline_devices:
-            subject = f"Tailscale Device(s) Offline - {self.config['tailnet']}"
+            # Include device name(s) in subject, strip domain at first period
+            short_names = [name.split('.')[0] for name in offline_devices]
+            if len(short_names) == 1:
+                device_list = short_names[0]
+            else:
+                device_list = ', '.join(short_names)
+
+            subject = f"Tailscale Device Offline: {device_list}"
             body = f"""
 Tailscale device(s) have gone offline on tailnet {self.config['tailnet']}.
 
@@ -384,7 +391,14 @@ Current device status:
 
         # Send notifications for devices coming online
         if online_devices:
-            subject = f"Tailscale Device(s) Online - {self.config['tailnet']}"
+            # Include device name(s) in subject, strip domain at first period
+            short_names = [name.split('.')[0] for name in online_devices]
+            if len(short_names) == 1:
+                device_list = short_names[0]
+            else:
+                device_list = ', '.join(short_names)
+
+            subject = f"Tailscale Device Online: {device_list}"
             body = f"""
 Tailscale device(s) have come online on tailnet {self.config['tailnet']}.
 
