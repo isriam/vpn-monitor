@@ -327,8 +327,8 @@ class TailscaleMonitor:
                 continue
 
             # Check if device is online
-            # Tailscale API returns 'online' field in the device object
-            is_online = device.get('online', False)
+            # Tailscale API returns 'connectedToControl' field in the device object
+            is_online = device.get('connectedToControl', False)
 
             # Get additional useful information
             last_seen = device.get('lastSeen', 'Unknown')
@@ -417,12 +417,12 @@ Current device status:
             devices = data['devices']
             logger.info(f"Total devices found: {len(devices)}")
 
-            online_count = sum(1 for device in devices if device.get('online', False))
+            online_count = sum(1 for device in devices if device.get('connectedToControl', False))
             logger.info(f"Online devices: {online_count}/{len(devices)}")
 
             for i, device in enumerate(devices):
                 device_name = device.get('name', device.get('hostname', f'device-{i}'))
-                is_online = device.get('online', False)
+                is_online = device.get('connectedToControl', False)
                 os_type = device.get('os', 'Unknown')
                 last_seen = device.get('lastSeen', 'Unknown')
                 device_tags = device.get('tags', [])
