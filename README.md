@@ -21,15 +21,19 @@ A Python suite that monitors VPN connections and sends email notifications when 
 - **Configurable**: All settings managed through environment variables
 - **Multiple Execution Modes**: Normal operation, single check, config test, and debug modes
 
-## Which Monitor Should I Use?
+## Quick Start
 
-Choose the appropriate monitor based on your needs:
+```bash
+# Monitor WireGuard
+python vpn_monitor.py wireguard
 
-- **`wireguard_monitor.py`**: Monitor only WireGuard connections. Use this if you only have WireGuard infrastructure.
+# Monitor Tailscale
+python vpn_monitor.py tailscale
 
-- **`tailscale_monitor.py`**: Monitor only Tailscale devices. Use this if you only use Tailscale networking.
-
-You can run both monitors simultaneously as separate services if you use both VPN services.
+# Short aliases work too
+python vpn_monitor.py wg --check-once
+python vpn_monitor.py ts --config-test
+```
 
 ## Requirements
 
@@ -142,7 +146,7 @@ For `TAILSCALE_TAILNET`, use:
 To find device names and tags for monitoring:
 ```bash
 # Run config test to see all available devices and their tags
-python3 tailscale_monitor.py --config-test -v
+python vpn_monitor.py ts --config-test -v
 ```
 
 #### Tag-Based Monitoring
@@ -185,46 +189,35 @@ MONITORED_TAILSCALE_TAGS=kids-devices  # This is ignored
 
 ## Usage
 
-### WireGuard Monitor
+The VPN monitor uses a single CLI with subcommands for each VPN type.
 
-#### Manual Execution (Virtual Environment)
+### WireGuard Monitoring
+
 ```bash
-source venv/bin/activate
-python3 wireguard_monitor.py
+python vpn_monitor.py wireguard              # Continuous monitoring
+python vpn_monitor.py wg --check-once        # Single status check
+python vpn_monitor.py wg --test-email        # Test email configuration
+python vpn_monitor.py wg --config-test       # Test API connectivity
+python vpn_monitor.py -v wg                  # Verbose output
+python vpn_monitor.py -d wg                  # Debug mode
 ```
 
-#### Manual Execution (System Python)
-```bash
-python3 wireguard_monitor.py
-
-# Examples:
-python3 wireguard_monitor.py                    # Normal operation
-python3 wireguard_monitor.py -v                 # Verbose output
-python3 wireguard_monitor.py -d                 # Debug mode with detailed logging
-python3 wireguard_monitor.py --test-email       # Test email configuration
-python3 wireguard_monitor.py --check-once       # Single status check (no loop)
-python3 wireguard_monitor.py --config-test      # Test configuration and API
-```
-
-### Tailscale Monitor
+### Tailscale Monitoring
 
 ```bash
-python3 tailscale_monitor.py
-
-# Examples:
-python3 tailscale_monitor.py                    # Normal operation
-python3 tailscale_monitor.py -v                 # Verbose output
-python3 tailscale_monitor.py -d                 # Debug mode
-python3 tailscale_monitor.py --test-email       # Test email configuration
-python3 tailscale_monitor.py --check-once       # Single status check
-python3 tailscale_monitor.py --config-test      # Test configuration and API
+python vpn_monitor.py tailscale              # Continuous monitoring
+python vpn_monitor.py ts --check-once        # Single status check
+python vpn_monitor.py ts --test-email        # Test email configuration
+python vpn_monitor.py ts --config-test       # Test API connectivity
+python vpn_monitor.py -v ts                  # Verbose output
+python vpn_monitor.py -d ts                  # Debug mode
 ```
 
 ### Discover Device Names (Tailscale)
 
 Before setting up monitoring, discover your device names:
 ```bash
-python3 tailscale_monitor.py --config-test -v
+python vpn_monitor.py ts --config-test -v
 ```
 
 This will show you:
@@ -318,7 +311,7 @@ You can create separate services for WireGuard and Tailscale monitoring. This al
    Type=simple
    User=your_username
    WorkingDirectory=/path/to/vpn-monitor
-   ExecStart=/path/to/vpn-monitor/venv/bin/python /path/to/vpn-monitor/wireguard_monitor.py
+   ExecStart=/path/to/vpn-monitor/venv/bin/python /path/to/vpn-monitor/vpn_monitor.py wireguard
    Restart=always
    RestartSec=10
    StandardOutput=journal
@@ -360,7 +353,7 @@ You can create separate services for WireGuard and Tailscale monitoring. This al
    Type=simple
    User=your_username
    WorkingDirectory=/path/to/vpn-monitor
-   ExecStart=/path/to/vpn-monitor/venv/bin/python /path/to/vpn-monitor/tailscale_monitor.py
+   ExecStart=/path/to/vpn-monitor/venv/bin/python /path/to/vpn-monitor/vpn_monitor.py tailscale
    Restart=always
    RestartSec=10
    StandardOutput=journal
@@ -471,8 +464,8 @@ Log levels:
 
 Enable debug logging by running with the `-d` flag:
 ```bash
-python3 wireguard_monitor.py -d
-python3 tailscale_monitor.py -d
+python vpn_monitor.py -d wg
+python vpn_monitor.py -d ts
 ```
 
 ## API Compatibility
